@@ -54,18 +54,22 @@ resource "aws_iam_role_policy_attachment" "execution_role" {
   policy_arn = aws_iam_policy.execution_role.arn
 }
 
-data "template_file" "this" {
-  template = "${file("${path.module}/src/index.js.tpl")}"
-  vars = {
-    REDIRECT_HTTP_CODE = var.redirect_http_code,
-    REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
-    REDIRECT_URL       = var.redirect_url,
-  }
-}
+# data "template_file" "this" {
+#   template = "${file("${path.module}/src/index.js.tpl")}"
+#   vars = {
+#     REDIRECT_HTTP_CODE = var.redirect_http_code,
+#     REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
+#     REDIRECT_URL       = var.redirect_url,
+#   }
+# }
 
 data "archive_file" "this" {
   type        = "zip"
-  source_file = data.template_file.this.rendered
+  source_file = templatefile("${path.module}/src/index.js.tpl", {
+    REDIRECT_HTTP_CODE = var.redirect_http_code,
+    REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
+    REDIRECT_URL       = var.redirect_url,
+  })
   output_path = "${path.module}/deploy.zip"
 }
 
