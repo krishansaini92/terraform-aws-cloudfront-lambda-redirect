@@ -54,9 +54,18 @@ resource "aws_iam_role_policy_attachment" "execution_role" {
   policy_arn = aws_iam_policy.execution_role.arn
 }
 
+data "template_file" "this" {
+  template = "${file("${path.module}/src/index.js.tpl")}"
+  vars = {
+    REDIRECT_HTTP_CODE = var.redirect_http_code,
+    REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
+    REDIRECT_URL       = var.redirect_url,
+  }
+}
+
 data "archive_file" "this" {
   type        = "zip"
-  source_file = "${path.module}/src/index.js"
+  source_file = data.template_file.this.rendered
   output_path = "${path.module}/deploy.zip"
 }
 
@@ -71,13 +80,6 @@ resource "aws_lambda_function" "this" {
   timeout          = var.timeout
   memory_size      = var.memory_size
   publish          = true
-  environment {
-    variables = {
-      REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
-      REDIRECT_URL       = var.redirect_url,
-      REDIRECT_HTTP_CODE = var.redirect_http_code,
-    }
-  }
   tags = var.tags
   depends_on = [
     data.archive_file.this
