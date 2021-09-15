@@ -5,7 +5,7 @@ Used to redirect domain examplea.com to exampleb.com, subdomains are not availab
 ``` terraform
 module "redirect" {
   source             = "Lupus-Metallum/cloudfront-lambda-redirect/aws"
-  version            = 1.0.0
+  version            = "1.0.0"
   name               = "example-redirect"
   source_zone_name   = "examplea.com"
   redirect_url       = "exampleb.com"
