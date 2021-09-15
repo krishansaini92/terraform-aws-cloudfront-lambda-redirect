@@ -64,13 +64,16 @@ resource "aws_iam_role_policy_attachment" "execution_role" {
 # }
 
 data "archive_file" "this" {
-  type        = "zip"
-  source_file = templatefile("${path.module}/src/index.js.tpl", {
-    REDIRECT_HTTP_CODE = var.redirect_http_code,
-    REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
-    REDIRECT_URL       = var.redirect_url,
-  })
+  type = "zip"
   output_path = "${path.module}/deploy.zip"
+  source {
+    content = templatefile("${path.module}/src/index.js.tpl", {
+      REDIRECT_HTTP_CODE = var.redirect_http_code,
+      REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
+      REDIRECT_URL       = var.redirect_url,
+    })
+    filename = "index.js"
+  }
 }
 
 resource "aws_lambda_function" "this" {
@@ -84,7 +87,7 @@ resource "aws_lambda_function" "this" {
   timeout          = var.timeout
   memory_size      = var.memory_size
   publish          = true
-  tags = var.tags
+  tags             = var.tags
   depends_on = [
     data.archive_file.this
   ]
@@ -231,7 +234,7 @@ resource "aws_route53_record" "a_this" {
 }
 
 resource "aws_route53_record" "aaaa_this" {
-  count = var.cloudfront_ipv6 == true ? 1 : 0
+  count   = var.cloudfront_ipv6 == true ? 1 : 0
   zone_id = data.aws_route53_zone.this.zone_id
   name    = data.aws_route53_zone.this.name
   type    = "AAAA"
