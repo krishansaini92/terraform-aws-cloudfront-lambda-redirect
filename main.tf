@@ -197,7 +197,7 @@ resource "aws_cloudfront_distribution" "this" {
     max_ttl                = 0
     compress               = true
     lambda_function_association {
-      event_type   = "viewer-response"
+      event_type   = "origin-request"
       include_body = false
       lambda_arn   = aws_lambda_function.this.qualified_arn
     }
