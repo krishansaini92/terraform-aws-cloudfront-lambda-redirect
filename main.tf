@@ -114,7 +114,7 @@ resource "aws_cloudfront_distribution" "this" {
     max_ttl                = 0
     compress               = true
     function_association {
-      event_type   = "origin-request"
+      event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.this.arn
     }
   }
