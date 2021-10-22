@@ -1,97 +1,4 @@
-## Lambda
 data "aws_partition" "current" {}
-
-
-resource "aws_iam_role" "execution_role" {
-  name               = "${var.name}-execution-role"
-  assume_role_policy = <<-EOF
-  {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Action": "sts:AssumeRole",
-        "Principal": {
-          "Service": [
-            "lambda.amazonaws.com",
-            "edgelambda.amazonaws.com"
-          ]
-        },
-        "Effect": "Allow",
-        "Sid": ""
-      }
-    ]
-  }
-  EOF
-  tags               = var.tags
-}
-
-data "aws_iam_policy_document" "execution_role" {
-  statement {
-    sid = "AllowCloudWatchLogs"
-    actions = [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
-    ]
-    effect = "Allow"
-    resources = [
-      format(
-        "arn:%s:logs:*::log-group:/aws/lambda/*:*:*",
-        data.aws_partition.current.partition
-      )
-    ]
-  }
-}
-
-resource "aws_iam_policy" "execution_role" {
-  name   = "${var.name}-policy"
-  path   = "/"
-  policy = data.aws_iam_policy_document.execution_role.json
-}
-
-resource "aws_iam_role_policy_attachment" "execution_role" {
-  role       = aws_iam_role.execution_role.name
-  policy_arn = aws_iam_policy.execution_role.arn
-}
-
-# data "template_file" "this" {
-#   template = "${file("${path.module}/src/index.js.tpl")}"
-#   vars = {
-#     REDIRECT_HTTP_CODE = var.redirect_http_code,
-#     REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
-#     REDIRECT_URL       = var.redirect_url,
-#   }
-# }
-
-data "archive_file" "this" {
-  type = "zip"
-  output_path = "${path.module}/deploy.zip"
-  source {
-    content = templatefile("${path.module}/src/index.js.tpl", {
-      REDIRECT_HTTP_CODE = var.redirect_http_code,
-      REDIRECT_PROTO     = var.redirect_to_https == true ? "https" : "http",
-      REDIRECT_URL       = var.redirect_url,
-    })
-    filename = "index.js"
-  }
-}
-
-resource "aws_lambda_function" "this" {
-  function_name    = var.name
-  description      = var.description
-  filename         = data.archive_file.this.output_path
-  source_code_hash = data.archive_file.this.output_base64sha256
-  handler          = "index.handler"
-  runtime          = "nodejs12.x"
-  role             = aws_iam_role.execution_role.arn
-  timeout          = var.timeout
-  memory_size      = var.memory_size
-  publish          = true
-  tags             = var.tags
-  depends_on = [
-    data.archive_file.this
-  ]
-}
 
 ## ACM Cert
 data "aws_route53_zone" "this" {
@@ -165,10 +72,17 @@ resource "aws_s3_bucket_public_access_block" "this" {
   ]
 }
 
-
 ## Cloudfront
 resource "aws_cloudfront_origin_access_identity" "this" {
   comment = "Used for private access to s3 via cloudfront for redirect of ${var.source_zone_name}"
+}
+
+resource "aws_cloudfront_function" "this" {
+  name    = var.name
+  runtime = "cloudfront-js-1.0"
+  comment = var.description
+  publish = true
+  code    = file("${path.module}/src/index.js.tpl")
 }
 
 resource "aws_cloudfront_distribution" "this" {
@@ -196,10 +110,9 @@ resource "aws_cloudfront_distribution" "this" {
     default_ttl            = 0
     max_ttl                = 0
     compress               = true
-    lambda_function_association {
+    function_association {
       event_type   = "origin-request"
-      include_body = false
-      lambda_arn   = aws_lambda_function.this.qualified_arn
+      lambda_arn   = aws_cloudfront_function.this.arn
     }
   }
   price_class = "PriceClass_100"
