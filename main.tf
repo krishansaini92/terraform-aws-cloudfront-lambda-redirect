@@ -82,7 +82,10 @@ resource "aws_cloudfront_function" "this" {
   runtime = "cloudfront-js-1.0"
   comment = var.description
   publish = true
-  code    = file("${path.module}/src/index.js.tpl")
+  code    = templatefile("${path.module}/src/index.js.tpl", {
+      REDIRECT_URL    = var.redirect_url,
+      REDIRECT_HTTP_CODE  = var.redirect_http_code,
+    })
 }
 
 resource "aws_cloudfront_distribution" "this" {
@@ -112,7 +115,7 @@ resource "aws_cloudfront_distribution" "this" {
     compress               = true
     function_association {
       event_type   = "origin-request"
-      lambda_arn   = aws_cloudfront_function.this.arn
+      function_arn = aws_cloudfront_function.this.arn
     }
   }
   price_class = "PriceClass_100"
@@ -124,7 +127,7 @@ resource "aws_cloudfront_distribution" "this" {
   }
   viewer_certificate {
     cloudfront_default_certificate = false
-    minimum_protocol_version       = "TLSv1.2_2019"
+    minimum_protocol_version       = "TLSv1.2_2021"
     ssl_support_method             = "sni-only"
     acm_certificate_arn            = module.acm_this.cert_arn
   }
