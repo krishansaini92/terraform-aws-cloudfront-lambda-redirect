@@ -9,7 +9,7 @@ module "acm_this" {
   source  = "Lupus-Metallum/acm/aws"
   version = "1.0.1"
 
-  domain_name               = data.aws_route53_zone.this.name
+  domain_name               = var.source_sub_domain != "" ? "${var.source_sub_domain}.${data.aws_route53_zone.this.name}" : data.aws_route53_zone.this.name
   r53_zone_id               = data.aws_route53_zone.this.zone_id
   subject_alternative_names = []
 }
@@ -101,7 +101,7 @@ resource "aws_cloudfront_distribution" "this" {
   is_ipv6_enabled = var.cloudfront_ipv6
   comment         = "Redirect ${var.source_zone_name} to ${var.redirect_url}"
 
-  aliases = [var.source_zone_name]
+  aliases = var.source_sub_domain != "" ? ["${var.source_sub_domain}.${var.source_zone_name}"] : [var.source_zone_name]
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
@@ -139,7 +139,7 @@ resource "aws_cloudfront_distribution" "this" {
 ## Route53
 resource "aws_route53_record" "a_this" {
   zone_id = data.aws_route53_zone.this.zone_id
-  name    = data.aws_route53_zone.this.name
+  name    = var.source_sub_domain != "" ? "${var.source_sub_domain}.${data.aws_route53_zone.this.name}" : data.aws_route53_zone.this.name
   type    = "A"
 
   alias {
@@ -152,7 +152,7 @@ resource "aws_route53_record" "a_this" {
 resource "aws_route53_record" "aaaa_this" {
   count   = var.cloudfront_ipv6 == true ? 1 : 0
   zone_id = data.aws_route53_zone.this.zone_id
-  name    = data.aws_route53_zone.this.name
+  name    = var.source_sub_domain != "" ? "${var.source_sub_domain}.${data.aws_route53_zone.this.name}" : data.aws_route53_zone.this.name
   type    = "AAAA"
 
   alias {

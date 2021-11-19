@@ -49,6 +49,12 @@ variable "source_zone_name" {
   description = "What is the r53 zone name of the source url?"
 }
 
+variable "source_sub_domain" {
+  type        = string
+  description = "What is the subdomain name of the source url?"
+  default     = ""
+}
+
 variable "cloudfront_ipv6" {
   type        = bool
   default     = true
