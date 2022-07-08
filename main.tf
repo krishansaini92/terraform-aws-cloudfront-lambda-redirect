@@ -47,15 +47,12 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 
 resource "aws_s3_bucket_website_configuration" "this" {
   bucket = aws_s3_bucket.this.bucket
-
   index_document {
-    suffix = var.s3_website_index_filename
+    suffix = "index.html"
   }
-
   error_document {
-    key = var.s3_website_error_filename
+    key = "error.html"
   }
-
 }
 
 data "aws_iam_policy_document" "s3_this" {
