@@ -27,6 +27,24 @@ resource "aws_s3_bucket_acl" "this" {
   acl    = "private"
 }
 
+resource "aws_s3_bucket_ownership_controls" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+  bucket = aws_s3_bucket.this.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "AES256"
+    }
+  }
+}
+
 resource "aws_s3_bucket_website_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
@@ -60,6 +78,40 @@ data "aws_iam_policy_document" "s3_this" {
       identifiers = [
         "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
       ]
+    }
+  }
+  statement {
+    sid       = "DenyIncorrectEncryptionHeader"
+    effect    = "Deny"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.this.arn}/*"]
+    principals {
+      type = "AWS"
+      identifiers = [
+        "*",
+      ]
+    }
+    condition {
+      test = "StringNotEquals"
+      variable = "s3:x-amz-server-side-encryption"
+      values = ["AES256"]
+    }
+  }
+  statement {
+    sid       = "DenyUnEncryptedObjectUploads"
+    effect    = "Deny"
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.this.arn}/*"]
+    principals {
+      type = "AWS"
+      identifiers = [
+        "*",
+      ]
+    }
+    condition {
+      test = "Null"
+      variable = "s3:x-amz-server-side-encryption"
+      values = ["true"]
     }
   }
 }
