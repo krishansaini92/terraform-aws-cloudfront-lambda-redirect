@@ -40,20 +40,20 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "AES256"
+      sse_algorithm = "AES256"
     }
   }
 }
 
 resource "aws_s3_bucket_website_configuration" "this" {
-  bucket = aws_s3_bucket.this.id
+  bucket = aws_s3_bucket.this.bucket
 
   index_document {
-    suffix = "index.html"
+    suffix = var.s3_website_index_filename
   }
 
   error_document {
-    key = "error.html"
+    key = var.s3_website_error_filename
   }
 
 }
@@ -92,9 +92,9 @@ data "aws_iam_policy_document" "s3_this" {
       ]
     }
     condition {
-      test = "StringNotEquals"
+      test     = "StringNotEquals"
       variable = "s3:x-amz-server-side-encryption"
-      values = ["AES256"]
+      values   = ["AES256"]
     }
   }
   statement {
@@ -109,9 +109,9 @@ data "aws_iam_policy_document" "s3_this" {
       ]
     }
     condition {
-      test = "Null"
+      test     = "Null"
       variable = "s3:x-amz-server-side-encryption"
-      values = ["true"]
+      values   = ["true"]
     }
   }
 }
