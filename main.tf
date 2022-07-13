@@ -1,5 +1,9 @@
 data "aws_partition" "current" {}
 
+resource "aws_cloudfront_origin_access_identity" "this" {
+  comment = var.source_sub_domain != "" ? "Used for private access to s3 via cloudfront for redirect of ${var.source_sub_domain}.${var.source_zone_name} to ${var.source_zone_name}" : "Used for private access to s3 via cloudfront for redirect of ${var.source_zone_name} to ${var.source_zone_name}"
+}
+
 ## ACM Cert
 data "aws_route53_zone" "this" {
   name = var.source_zone_name
@@ -16,44 +20,6 @@ module "acm_this" {
 
 ## S3
 data "aws_caller_identity" "current" {}
-
-resource "aws_s3_bucket" "this" {
-  bucket        = var.source_sub_domain != "" ? "${var.source_sub_domain}.${var.source_zone_name}-redirect" : "${var.source_zone_name}-redirect"
-  force_destroy = true
-}
-
-resource "aws_s3_bucket_acl" "this" {
-  bucket = aws_s3_bucket.this.id
-  acl    = "private"
-}
-
-resource "aws_s3_bucket_ownership_controls" "this" {
-  bucket = aws_s3_bucket.this.id
-
-  rule {
-    object_ownership = "BucketOwnerEnforced"
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
-  bucket = aws_s3_bucket.this.bucket
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_website_configuration" "this" {
-  bucket = aws_s3_bucket.this.bucket
-  index_document {
-    suffix = "index.html"
-  }
-  error_document {
-    key = "error.html"
-  }
-}
 
 data "aws_iam_policy_document" "s3_this" {
   statement {
@@ -113,12 +79,57 @@ data "aws_iam_policy_document" "s3_this" {
   }
 }
 
+resource "aws_s3_bucket" "this" {
+  bucket        = var.name
+  force_destroy = true
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_cloudfront_origin_access_identity.this
+    ]
+  }
+}
+
+resource "aws_s3_bucket_acl" "this" {
+  bucket = aws_s3_bucket.this.id
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_ownership_controls" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+  bucket = aws_s3_bucket.this.bucket
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_website_configuration" "this" {
+  bucket = aws_s3_bucket.this.bucket
+  index_document {
+    suffix = "index.html"
+  }
+  error_document {
+    key = "error.html"
+  }
+}
+
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = data.aws_iam_policy_document.s3_this.json
-  depends_on = [
-    aws_s3_bucket.this
-  ]
+  
+  # depends_on = [
+  #   aws_s3_bucket.this
+  # ]
 }
 
 resource "aws_s3_bucket_public_access_block" "this" {
@@ -127,17 +138,14 @@ resource "aws_s3_bucket_public_access_block" "this" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-  depends_on = [
-    aws_s3_bucket.this,
-    aws_s3_bucket_policy.this
-  ]
+  
+  # depends_on = [
+  #   aws_s3_bucket.this,
+  #   aws_s3_bucket_policy.this
+  # ]
 }
 
 ## Cloudfront
-resource "aws_cloudfront_origin_access_identity" "this" {
-  comment = var.source_sub_domain != "" ? "Used for private access to s3 via cloudfront for redirect of ${var.source_sub_domain}.${var.source_zone_name} to ${var.source_zone_name}" : "Used for private access to s3 via cloudfront for redirect of ${var.source_zone_name} to ${var.source_zone_name}"
-}
-
 resource "aws_cloudfront_function" "this" {
   name    = var.name
   runtime = "cloudfront-js-1.0"
@@ -160,7 +168,7 @@ resource "aws_cloudfront_distribution" "this" {
 
   enabled         = true
   is_ipv6_enabled = var.cloudfront_ipv6
-  comment         = "Redirect ${var.source_zone_name} to ${var.redirect_url}"
+  comment         = var.source_sub_domain != "" ? "Redirect ${var.source_sub_domain}.${var.source_zone_name} to ${var.redirect_url}" : "Redirect ${var.source_zone_name} to ${var.redirect_url}"
 
   aliases = var.source_sub_domain != "" ? ["${var.source_sub_domain}.${var.source_zone_name}"] : [var.source_zone_name]
   default_cache_behavior {
@@ -192,9 +200,10 @@ resource "aws_cloudfront_distribution" "this" {
     ssl_support_method             = "sni-only"
     acm_certificate_arn            = module.acm_this.cert_arn
   }
-  depends_on = [
-    aws_cloudfront_origin_access_identity.this,
-  ]
+  
+  # depends_on = [
+  #   aws_cloudfront_origin_access_identity.this,
+  # ]
 }
 
 ## Route53
