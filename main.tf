@@ -167,8 +167,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
   
   lifecycle {
     replace_triggered_by = [
-      data.aws_iam_policy_document.s3_this,
-      aws_s3_bucket.this
+      aws_s3_bucket_policy.this
     ]
   }
 }
