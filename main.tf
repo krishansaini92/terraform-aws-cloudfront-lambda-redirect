@@ -167,7 +167,6 @@ resource "aws_s3_bucket_public_access_block" "this" {
   
   lifecycle {
     replace_triggered_by = [
-      aws_cloudfront_origin_access_identity.this,
       data.aws_iam_policy_document.s3_this,
       aws_s3_bucket.this
     ]
@@ -187,7 +186,7 @@ resource "aws_cloudfront_function" "this" {
 
   lifecycle {
     replace_triggered_by = [
-      aws_cloudfront_distribution.this
+      aws_s3_bucket.this
     ]
   }
 }
