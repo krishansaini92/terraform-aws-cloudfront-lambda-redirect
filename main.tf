@@ -93,6 +93,12 @@ resource "aws_s3_bucket" "this" {
 resource "aws_s3_bucket_acl" "this" {
   bucket = aws_s3_bucket.this.id
   acl    = "private"
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_s3_bucket.this
+    ]
+  }
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
@@ -100,6 +106,12 @@ resource "aws_s3_bucket_ownership_controls" "this" {
 
   rule {
     object_ownership = "BucketOwnerEnforced"
+  }
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_s3_bucket.this
+    ]
   }
 }
 
@@ -111,6 +123,12 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
       sse_algorithm = "AES256"
     }
   }
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_s3_bucket.this
+    ]
+  }
 }
 
 resource "aws_s3_bucket_website_configuration" "this" {
@@ -121,15 +139,23 @@ resource "aws_s3_bucket_website_configuration" "this" {
   error_document {
     key = "error.html"
   }
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_s3_bucket.this
+    ]
+  }
 }
 
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = data.aws_iam_policy_document.s3_this.json
-  
-  # depends_on = [
-  #   aws_s3_bucket.this
-  # ]
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_s3_bucket.this
+    ]
+  }
 }
 
 resource "aws_s3_bucket_public_access_block" "this" {
@@ -139,10 +165,13 @@ resource "aws_s3_bucket_public_access_block" "this" {
   ignore_public_acls      = true
   restrict_public_buckets = true
   
-  # depends_on = [
-  #   aws_s3_bucket.this,
-  #   aws_s3_bucket_policy.this
-  # ]
+  lifecycle {
+    replace_triggered_by = [
+      aws_cloudfront_origin_access_identity.this,
+      data.aws_iam_policy_document.s3_this,
+      aws_s3_bucket.this
+    ]
+  }
 }
 
 ## Cloudfront
@@ -155,6 +184,12 @@ resource "aws_cloudfront_function" "this" {
     REDIRECT_URL       = var.redirect_url,
     REDIRECT_HTTP_CODE = var.redirect_http_code,
   })
+
+  lifecycle {
+    replace_triggered_by = [
+      aws_cloudfront_distribution.this
+    ]
+  }
 }
 
 resource "aws_cloudfront_distribution" "this" {
