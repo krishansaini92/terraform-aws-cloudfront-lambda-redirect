@@ -165,6 +165,10 @@ resource "aws_s3_bucket_public_access_block" "this" {
   ignore_public_acls      = true
   restrict_public_buckets = true
   
+  depends_on = [
+    aws_s3_bucket_policy.this,
+    aws_s3_bucket_acl.this,
+  ]
   lifecycle {
     replace_triggered_by = [
       aws_s3_bucket_policy.this
