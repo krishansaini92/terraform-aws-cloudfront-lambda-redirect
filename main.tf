@@ -135,7 +135,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
 
 ## Cloudfront
 resource "aws_cloudfront_origin_access_identity" "this" {
-  comment = var.source_sub_domain != "" ? "Used for private access to s3 via cloudfront for redirect of ${var.source_sub_domain}.${var.source_domain_name} to ${var.source_zone_name}" : "Used for private access to s3 via cloudfront for redirect of ${var.source_domain_name} to ${var.source_zone_name}"
+  comment = var.source_sub_domain != "" ? "Used for private access to s3 via cloudfront for redirect of ${var.source_sub_domain}.${var.source_zone_name} to ${var.source_zone_name}" : "Used for private access to s3 via cloudfront for redirect of ${var.source_zone_name} to ${var.source_zone_name}"
 }
 
 resource "aws_cloudfront_function" "this" {
