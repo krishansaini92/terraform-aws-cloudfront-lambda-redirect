@@ -93,12 +93,6 @@ resource "aws_s3_bucket" "this" {
 resource "aws_s3_bucket_acl" "this" {
   bucket = aws_s3_bucket.this.id
   acl    = "private"
-
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket.this
-    ]
-  }
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
@@ -106,12 +100,6 @@ resource "aws_s3_bucket_ownership_controls" "this" {
 
   rule {
     object_ownership = "BucketOwnerEnforced"
-  }
-
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket.this
-    ]
   }
 }
 
@@ -122,12 +110,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
-  }
-
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket.this
-    ]
   }
 }
 
@@ -140,22 +122,15 @@ resource "aws_s3_bucket_website_configuration" "this" {
     key = "error.html"
   }
 
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket.this
-    ]
-  }
 }
 
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = data.aws_iam_policy_document.s3_this.json
-
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket.this
-    ]
-  }
+  
+  depends_on = [
+    aws_s3_bucket.this
+  ]
 }
 
 resource "aws_s3_bucket_public_access_block" "this" {
@@ -169,11 +144,6 @@ resource "aws_s3_bucket_public_access_block" "this" {
     aws_s3_bucket_policy.this,
     aws_s3_bucket_acl.this,
   ]
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket_policy.this
-    ]
-  }
 }
 
 ## Cloudfront
@@ -186,12 +156,6 @@ resource "aws_cloudfront_function" "this" {
     REDIRECT_URL       = var.redirect_url,
     REDIRECT_HTTP_CODE = var.redirect_http_code,
   })
-
-  lifecycle {
-    replace_triggered_by = [
-      aws_s3_bucket.this
-    ]
-  }
 }
 
 resource "aws_cloudfront_distribution" "this" {
@@ -237,10 +201,6 @@ resource "aws_cloudfront_distribution" "this" {
     ssl_support_method             = "sni-only"
     acm_certificate_arn            = module.acm_this.cert_arn
   }
-  
-  # depends_on = [
-  #   aws_cloudfront_origin_access_identity.this,
-  # ]
 }
 
 ## Route53
