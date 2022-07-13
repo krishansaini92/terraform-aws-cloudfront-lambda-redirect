@@ -12,7 +12,7 @@ variable "name" {
 variable "description" {
   type        = string
   description = "Description to use for resource description created by this module"
-  default     = "Adds security headers for Cloudfront"
+  default     = "Redirect to new URL"
 }
 
 variable "timeout" {
