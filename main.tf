@@ -93,6 +93,9 @@ resource "aws_s3_bucket" "this" {
 resource "aws_s3_bucket_acl" "this" {
   bucket = aws_s3_bucket.this.id
   acl    = "private"
+  depends_on = [
+    aws_s3_bucket.this
+  ]
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
@@ -101,6 +104,10 @@ resource "aws_s3_bucket_ownership_controls" "this" {
   rule {
     object_ownership = "BucketOwnerEnforced"
   }
+  depends_on = [
+    aws_s3_bucket.this,
+    aws_s3_bucket_acl.this
+  ]
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
@@ -111,6 +118,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
       sse_algorithm = "AES256"
     }
   }
+  depends_on = [
+    aws_s3_bucket.this,
+    aws_s3_bucket_acl.this,
+    aws_s3_bucket_ownership_controls.this
+  ]
 }
 
 resource "aws_s3_bucket_website_configuration" "this" {
@@ -121,15 +133,25 @@ resource "aws_s3_bucket_website_configuration" "this" {
   error_document {
     key = "error.html"
   }
+  depends_on = [
+    aws_s3_bucket.this,
+    aws_s3_bucket_acl.this,
+    aws_s3_bucket_ownership_controls.this,
+    aws_s3_bucket_server_side_encryption_configuration.this
+  ]
 
 }
 
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
   policy = data.aws_iam_policy_document.s3_this.json
-  
+
   depends_on = [
-    aws_s3_bucket.this
+    aws_s3_bucket.this,
+    aws_s3_bucket_acl.this,
+    aws_s3_bucket_ownership_controls.this,
+    aws_s3_bucket_server_side_encryption_configuration.this,
+    aws_s3_bucket_website_configuration.this
   ]
 }
 
@@ -139,10 +161,14 @@ resource "aws_s3_bucket_public_access_block" "this" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
-  
+
   depends_on = [
-    aws_s3_bucket_policy.this,
+    aws_s3_bucket.this,
     aws_s3_bucket_acl.this,
+    aws_s3_bucket_ownership_controls.this,
+    aws_s3_bucket_server_side_encryption_configuration.this,
+    aws_s3_bucket_website_configuration.this,
+    aws_s3_bucket_policy.this
   ]
 }
 
