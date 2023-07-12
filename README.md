@@ -5,7 +5,7 @@ Used to redirect domain examplea.com to exampleb.com, or test.examplea.com to ex
 ``` terraform
 module "redirect" {
   source             = "Lupus-Metallum/cloudfront-lambda-redirect/aws"
-  version            = "2.0.1"
+  version            = "2.4.0"
   name               = "example-redirect"
   source_zone_name   = "examplea.com"
   source_sub_domain  = "test"
