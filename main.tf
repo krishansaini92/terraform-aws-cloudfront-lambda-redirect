@@ -16,6 +16,8 @@ module "acm_this" {
   domain_name               = var.source_sub_domain != "" ? "${var.source_sub_domain}.${data.aws_route53_zone.this.name}" : data.aws_route53_zone.this.name
   r53_zone_id               = data.aws_route53_zone.this.zone_id
   subject_alternative_names = []
+
+  tags = var.tags
 }
 
 ## S3
@@ -88,6 +90,8 @@ resource "aws_s3_bucket" "this" {
       aws_cloudfront_origin_access_identity.this
     ]
   }
+
+  tags = var.tags
 }
 
 resource "aws_s3_bucket_ownership_controls" "this" {
@@ -227,6 +231,8 @@ resource "aws_cloudfront_distribution" "this" {
     ssl_support_method             = "sni-only"
     acm_certificate_arn            = module.acm_this.cert_arn
   }
+
+  tags = var.tags
 }
 
 ## Route53
