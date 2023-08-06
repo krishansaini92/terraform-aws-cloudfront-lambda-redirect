@@ -203,9 +203,10 @@ resource "aws_cloudfront_distribution" "this" {
 
   aliases = var.source_sub_domain != "" ? ["${var.source_sub_domain}.${var.source_zone_name}"] : [var.source_zone_name]
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = aws_s3_bucket.this.id
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = aws_s3_bucket.this.id
+    response_headers_policy_id = var.response_headers_policy_id
 
     viewer_protocol_policy = "redirect-to-https"
     cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6"

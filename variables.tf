@@ -60,3 +60,9 @@ variable "cloudfront_ipv6" {
   default     = true
   description = "Should we configure the cloudfront distribution for IPv6?"
 }
+
+variable "response_headers_policy_id" {
+  type        = string
+  default     = ""
+  description = "Should we add a response headers policy to the CloudFront distrobution created by this module?"
+}
