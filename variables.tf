@@ -61,6 +61,12 @@ variable "cloudfront_ipv6" {
   description = "Should we configure the cloudfront distribution for IPv6?"
 }
 
+variable "cloudfront_http_version" {
+  type        = string
+  default     = "http2"
+  description = "What version of HTTP should we configure this CloudFront distrobution for?"
+}
+
 variable "response_headers_policy_id" {
   type        = string
   default     = ""

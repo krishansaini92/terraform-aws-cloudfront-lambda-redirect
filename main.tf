@@ -199,6 +199,7 @@ resource "aws_cloudfront_distribution" "this" {
 
   enabled         = true
   is_ipv6_enabled = var.cloudfront_ipv6
+  http_version    = var.cloudfront_http_version
   comment         = var.source_sub_domain != "" ? "Redirect ${var.source_sub_domain}.${var.source_zone_name} to ${var.redirect_url}" : "Redirect ${var.source_zone_name} to ${var.redirect_url}"
 
   aliases = var.source_sub_domain != "" ? ["${var.source_sub_domain}.${var.source_zone_name}"] : [var.source_zone_name]
